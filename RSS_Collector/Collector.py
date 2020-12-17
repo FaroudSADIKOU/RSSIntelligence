@@ -10,7 +10,7 @@ import os, sys, inspect
 src_dir = os.path.dirname(inspect.getfile(inspect.currentframe()))
 sys.path.append(src_dir)
 
-data_dir = os.path.abspath(os.path.join(src_dir, 'data/'))
+data_dir = os.path.abspath(os.path.join(src_dir, 'unlabeled_data/'))
 
 PLAIN_FEED_URL_FILE_PATH = os.path.join(data_dir, 'ListFluxRSS-v1_.csv')
 MONITORED_FEED_FILE_PATH = os.path.join(data_dir, 'monitored_feeds')

@@ -23,7 +23,7 @@ helper_dir = data_dir = os.path.abspath(os.path.join(src_dir, '../helper'))
 sys.path.append(src_dir)
 sys.path.append(helper_dir)
 
-data_dir = os.path.abspath(os.path.join(src_dir, '../../RSS_Collector/data/'))
+data_dir = os.path.abspath(os.path.join(src_dir, '../../RSS_Collector/unlabeled_data/'))
 ARTICLES_FILE_PATH = os.path.join(data_dir, 'articles')
 
 # %%

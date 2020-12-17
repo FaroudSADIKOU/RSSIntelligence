@@ -16,7 +16,7 @@ HEADER_DICT = {'link': 'feed_link', 'lang': 'language', 'cat': 'category'}
 # %%
 
 class MonitoredFeedReader():
-    def __init__(self, file_path_ = "../data/ListFluxRSS-v1_.csv") -> None:
+    def __init__(self, file_path_ = "../unlabeled_data/ListFluxRSS-v1_.csv") -> None:
         self.file_path = file_path_
         self.dataset = self._read()
     
@@ -26,6 +26,9 @@ class MonitoredFeedReader():
     
     def retrieve_url_and_category(self) -> pd.DataFrame:
         return self.dataset[[HEADER_DICT['link'], HEADER_DICT['cat']]]
+    
+    def retrieve_url(self) -> pd.DataFrame:
+        return self.dataset[[HEADER_DICT['link']]]
     
 
 

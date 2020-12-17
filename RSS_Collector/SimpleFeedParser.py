@@ -9,7 +9,7 @@ Created on Sun Sep 20 11:29:52 2020
 import os, sys, inspect
 src_dir = os.path.dirname(inspect.getfile(inspect.currentframe()))
 
-data_dir = os.path.abspath(os.path.join(src_dir, 'data/'))
+data_dir = os.path.abspath(os.path.join(src_dir, 'unlabeled_data/'))
 PLAIN_FEED_URL_FILE_PATH = os.path.join(data_dir, 'ListFluxRSS-v1_.csv')
 MONITORED_FEED_FILE_PATH = os.path.join(data_dir, 'monitored_feeds')
 ARTICLES_FILE_PATH = os.path.join(data_dir, 'articles')
@@ -70,12 +70,11 @@ class SimpleFeedParser():
             #print("[URLS]: \n")
             for key in database:
                 url = database[key]['url']
-                category = database[key]['category']
                 etag = database[key]['etag']
                 last_modified_date = database[key]['last_modified']
                 pub_date = database[key]['pub_date']
                 
-                yield Feed(url, category, etag, last_modified_date, pub_date)
+                yield Feed(url, None, etag, last_modified_date, pub_date)
         ##
         
         #First preproccess
@@ -145,7 +144,6 @@ class SimpleFeedParser():
                     for item in feed_data.entries: #go through the items in the feed
                         a_feed_item = self.__item_content_getter(item, feed)
                         if (a_feed_item is not None):
-                            a_feed_item.category
                             #Time to save into media file
                             if (self.__save_article_to_file(a_feed_item)):
                                 # add the saved article to the collector
@@ -162,7 +160,6 @@ class SimpleFeedParser():
             return None
         else:
             source_feed_url = feed.url
-            category = feed.category
             title = item.title
             source_site_url = item.get('link', None)
             description = item.get('description', None)
@@ -191,6 +188,7 @@ class SimpleFeedParser():
                 else:
                     #create a FeedItem fill of the retrieved informations.
                     #print("Out of content getter")
+                    # get a category for the content by our model
                     return FeedItem.FeedItem(hid, 
                                              source_feed_url, source_site_url, 
                                              title, description, summary, 
@@ -373,14 +371,14 @@ class SimpleFeedParser():
         def setting_up():
             monitored_feed_reader = mfr.MonitoredFeedReader(self.plain_feeds_data_path)
             # the following set contain url and category and features
-            moniored_feeds_dataset = monitored_feed_reader.retrieve_url_and_category()
+            moniored_feeds_dataset = monitored_feed_reader.retrieve_url()
                     
             #Get the actual monitored feed url and check if they are all taken into account
             database = shelve.open(self.monitored_feeds_data_path, writeback=True)
             #
             try: 
-                for url, category in zip(moniored_feeds_dataset['feed_link'], moniored_feeds_dataset['category']):
-                    a_feed = Feed(url, category)
+                for url in moniored_feeds_dataset['feed_link']:
+                    a_feed = Feed(url, None)
                     key = self.__build_feed_key(a_feed)
                     if key in database:
                         pass
@@ -389,7 +387,7 @@ class SimpleFeedParser():
                         #print('\t[etag = {} and last_modified={}]'.format(a_record['etag'], a_record['last_modified']))
                     else: 
                         #add to database
-                        database[key] = {'url': url, 'category': category, 
+                        database[key] = {'url': url,
                                          'etag': '', 'last_modified': '', 'pub_date': '' }
             finally:
                 database.close()

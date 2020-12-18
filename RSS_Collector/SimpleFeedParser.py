@@ -14,7 +14,12 @@ PLAIN_FEED_URL_FILE_PATH = os.path.join(data_dir, 'ListFluxRSS-v1_.csv')
 MONITORED_FEED_FILE_PATH = os.path.join(data_dir, 'monitored_feeds')
 ARTICLES_FILE_PATH = os.path.join(data_dir, 'articles')
 
+classifier_dir = os.path.abspath(os.path.join(src_dir, '../Classification/'))
+
 sys.path.append(src_dir)
+sys.path.append(classifier_dir)
+
+# %%
 
 import feedparser
 from bs4 import BeautifulSoup
@@ -37,12 +42,15 @@ from model.Feed import Feed
 from model import FeedItem
 from helper import Helpers, MonitoredFeedReader as mfr
 import SimpleCrawler
+from classifier import Classifier
 
 
 
 # %%
 
 crawler = SimpleCrawler.SimpleCrawler()
+
+clf = Classifier()
 
 # lock definition
 threadLock = threading.Lock()
@@ -70,11 +78,15 @@ class SimpleFeedParser():
             #print("[URLS]: \n")
             for key in database:
                 url = database[key]['url']
+                lang = database[key]['lang']
                 etag = database[key]['etag']
                 last_modified_date = database[key]['last_modified']
                 pub_date = database[key]['pub_date']
                 
-                yield Feed(url, None, etag, last_modified_date, pub_date)
+                yield Feed(
+                    url_ = url, lang_ = lang, 
+                    etag_=etag, last_modif_=last_modified_date, pub_date_=pub_date
+                )
         ##
         
         #First preproccess
@@ -188,11 +200,12 @@ class SimpleFeedParser():
                 else:
                     #create a FeedItem fill of the retrieved informations.
                     #print("Out of content getter")
-                    # get a category for the content by our model
+                    # get a category for the content by our model (based on the language)
+                    predicted_category = clf.predict( feed.lang, f'{title} {description} {content}')
                     return FeedItem.FeedItem(hid, 
                                              source_feed_url, source_site_url, 
                                              title, description, summary, 
-                                             language, date, content, category )
+                                             language, date, content, predicted_category )
     
 
     ###
@@ -371,14 +384,14 @@ class SimpleFeedParser():
         def setting_up():
             monitored_feed_reader = mfr.MonitoredFeedReader(self.plain_feeds_data_path)
             # the following set contain url and category and features
-            moniored_feeds_dataset = monitored_feed_reader.retrieve_url()
+            moniored_feeds_dataset = monitored_feed_reader.retrieve_url_and_lang()
                     
             #Get the actual monitored feed url and check if they are all taken into account
             database = shelve.open(self.monitored_feeds_data_path, writeback=True)
             #
             try: 
-                for url in moniored_feeds_dataset['feed_link']:
-                    a_feed = Feed(url, None)
+                for url, lang in zip(moniored_feeds_dataset['feed_link'], moniored_feeds_dataset['language']):
+                    a_feed = Feed(url, lang, None)
                     key = self.__build_feed_key(a_feed)
                     if key in database:
                         pass
@@ -387,7 +400,7 @@ class SimpleFeedParser():
                         #print('\t[etag = {} and last_modified={}]'.format(a_record['etag'], a_record['last_modified']))
                     else: 
                         #add to database
-                        database[key] = {'url': url,
+                        database[key] = {'url': url, 'lang': lang,
                                          'etag': '', 'last_modified': '', 'pub_date': '' }
             finally:
                 database.close()
@@ -423,10 +436,10 @@ class SimpleFeedParser():
 #                                           MONITORED_FEED_FILE_PATH, 
 #                                           ARTICLES_FILE_PATH)
     
-#     simple_feed_parser.parseFeed("http://rss.cnn.com/rss/edition_world.rss")
+#     #simple_feed_parser.parseFeed("http://rss.cnn.com/rss/edition_world.rss")
 #     #simple_feed_parser.testing_etags("http://rss.cnn.com/rss/edition_world.rss")
     
-#     #simple_feed_parser.parseFeeds_from_url_in_file()
+#     simple_feed_parser.parseFeeds_from_url_in_file()
     
 # if __name__ == '__main__':
 #     main()

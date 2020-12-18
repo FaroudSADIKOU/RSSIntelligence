@@ -8,8 +8,9 @@ Created on Fri Nov  6 18:38:43 2020
 
 """
 class Feed():
-    def __init__(self, url_, category_, etag_='', last_modif_='', pub_date_=''):
+    def __init__(self, url_, lang_, category_=None, etag_='', last_modif_='', pub_date_=''):
         self.url = url_
+        self.lang = lang_
         self.category = category_
         self.etag = etag_
         self.modif_date = last_modif_

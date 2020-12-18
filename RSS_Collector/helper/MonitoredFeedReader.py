@@ -6,7 +6,6 @@ Created on Wed Sep 30 15:49:30 2020
 """
 # %% Imports
 import pandas as pd
-from enum import Enum
 # %% Global definitions
 
 LINE_ITEM_SEPARATOR = " "
@@ -26,6 +25,9 @@ class MonitoredFeedReader():
     
     def retrieve_url_and_category(self) -> pd.DataFrame:
         return self.dataset[[HEADER_DICT['link'], HEADER_DICT['cat']]]
+    
+    def retrieve_url_and_lang(self) -> pd.DataFrame:
+        return self.dataset[[HEADER_DICT['link'], HEADER_DICT['lang']]]
     
     def retrieve_url(self) -> pd.DataFrame:
         return self.dataset[[HEADER_DICT['link']]]

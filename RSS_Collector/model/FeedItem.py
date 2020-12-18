@@ -17,7 +17,7 @@ class FeedItem(object):
              title_, description_, summary_,
              language_, 
              date_: datetime.datetime,
-             content_, category_):
+             content_, predicted_category_):
         self.hid = hid_
         self.source_feed_url = source_feed_url_
         self.source_site_page_url = source_site_page_url_
@@ -27,7 +27,7 @@ class FeedItem(object):
         self.language = language_
         self.date = date_
         self.content = content_
-        self.category = category_
+        self.predicted_category = predicted_category_
  
     def __str__(self):
         return '[HID]:\n {} \n[TITLE]:\n {} \n[SITE_URL]:\n {} \n[CONTENT]:\n {}'.format(

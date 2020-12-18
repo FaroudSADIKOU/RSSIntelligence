@@ -9,7 +9,7 @@ Created on Sat Nov 14 15:09:26 2020
 import sys, os, inspect
 src_dir = os.path.dirname(inspect.getfile(inspect.currentframe()))
 
-helper_dir = data_dir = os.path.abspath(os.path.join(src_dir, '../helper'))
+helper_dir = os.path.abspath(os.path.join(src_dir, '../helper'))
 sys.path.append(helper_dir)
 
 from DateTimeEncoder import DateTimeEncoder

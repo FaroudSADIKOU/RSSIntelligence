@@ -28,19 +28,16 @@ ARTICLES_FILE_PATH = os.path.join(data_dir, 'articles')
 
 # %%
 from Indexer import Indexer
-from elasticsearch import Elasticsearch
 from elasticsearch.helpers import streaming_bulk
 from ElasticConnector import ElasticConnector
 
 
-import shelve
-import json
 import tqdm
 
 # %%
 
 class ItemIndexer(Indexer):
-    index_name = "feed_items" # @property
+    index_name = "users_feed_items" # @property
 
     
     def create_index(self):

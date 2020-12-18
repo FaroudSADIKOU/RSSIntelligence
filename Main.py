@@ -41,14 +41,14 @@ def launch_search():
 # %%
 def main():
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+        executor.submit(launch_search)
         executor.submit(collect)
-        future_search = executor.submit(launch_search)
+        #future_search = executor.submit(launch_search)
         
-        while True:
-            if(future_search.done()):
-                print("\n\nSEARCH DONE .... \n\n")
-                break;
-    
+        # while True:
+        #     if(future_search.done()):
+        #         print("\n\nSEARCH DONE .... \n\n")
+        #         break;
 
 # %%
 if __name__ == '__main__':

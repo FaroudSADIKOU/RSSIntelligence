@@ -3,6 +3,11 @@
 Created on Sun Sep 20 11:29:52 2020
 
 @author: Faroud
+
+Script to collect data from different link mentionned in an RSS feed.
+Read all the RSS link from a file, parse the content,
+create at most 4 thread to speed the proccess and collect web content 
+using the SimpleCrawler module.
 """
 
 # %% Imports 
@@ -99,7 +104,7 @@ class SimpleFeedParser():
                 feeds_to_parse = generate_feeds_to_parse(database) # return a genertor
                 # multi proccess area
                 with tqdm(total=self.stats_monitored_feeds()) as pbar:
-                    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+                    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
                         futures_new_items_hids = [executor.submit(self.parseFeed, feed) for feed in feeds_to_parse]
                         
                         for future_item_hid in as_completed(futures_new_items_hids):
@@ -116,17 +121,20 @@ class SimpleFeedParser():
     ###
     def parseFeed(self, feed: Feed):  
         """
-        parse a feed from a url and retrieve some useful items 
+        Parse a feed from a url inside [feed] and retrieve some useful items content
         for our use case.
-
+        
+        After the collect save the new article from that feed in the file database.
+        
         Parameters
         ----------
-        url : TYPE
-            DESCRIPTION.
+        feed : Feed
+            an instance of Feed.
 
         Returns
         -------
-        None.
+        List of the hid of the new collected content from the web.
+        
 
         """
         new_items_hid_collector = [] # will keep the hids of the new article saved to file
@@ -167,6 +175,11 @@ class SimpleFeedParser():
         
      ###
     def __item_content_getter(self, item, feed):
+        """ Function to get the content of a Feed item.
+        
+        RETURNS:
+            an instance of FeedItem
+        """
         #print("Inside content getter")
         if ('title' not in item):
             return None
@@ -229,23 +242,21 @@ class SimpleFeedParser():
         """
         Arround some item fields, there is still some tag. 
         Like <p> <p/> arond the title content.
-        Parameters
-        ----------
-        markup : TYPE
-            DESCRIPTION.
-
-        Returns
-        -------
-        TYPE
-            DESCRIPTION.
-
+        
+        This function is made to remove those tags and return only the text inside.
         """
         return BeautifulSoup(markup, 'html.parser').get_text() if markup is not None else None
 
 
     ###
     def __isOkStatus(self, status):  
-        """
+        """  Check the value of status and then return a boolean.
+        This boolean is made to tell the proccess to continue or not.
+        PARAMETERS
+        ----------
+        status: int
+            The HTTP status code that was returned by the web server when the feed was fetched.
+        
         """
         if(status == 200):
             return True
@@ -262,7 +273,7 @@ class SimpleFeedParser():
     ###
     def __is_pubDate_after(self, pub_date_str: str, local_pub_date_str: str):
         """
-        Compares two date 
+        Compares two dates
         """
         # pay attention to the if conditions orser, it's important
         if not local_pub_date_str:
@@ -279,18 +290,7 @@ class SimpleFeedParser():
     #TODO Add an implementation.
     def __langDetectExtend(self, *text_args):
         #print("/".join(text_args))
-        """
-    
-        Parameters
-        ----------
-        list_of_text : TYPE
-            DESCRIPTION.
-    
-        Returns
-        -------
-        str
-            DESCRIPTION.
-    
+        """ Detect the language of a text    
         """
         text_supposed_not_none = next((text for text in text_args if text), '')
         lang = 'UKNOWN'
@@ -306,19 +306,26 @@ class SimpleFeedParser():
 
 
     def __getDate(self, item):
-        """
+        """ Get the publication date of a feed item.
     
         """
         date = item.get('published', None)
         return None if not date else du_parser.parse(date)
     
     def __isFeed_WellFormed(self, bozo):
+        """ Check if a feed is well formed.
+        Return True if bozo attribut is 0 and False if not.
+        """
         return bozo == 0
        
 
     ###
     # ask for lock inside there
     def __save_article_to_file(self, article_: FeedItem):
+        """ Save a new crawled article to file. 
+        An article here is a cleaned content of a link referenced 
+        inside a feed item.
+        """
         save_status = False
         hid = article_.hid
         # acquire the lock
@@ -343,11 +350,15 @@ class SimpleFeedParser():
     
     ###
     def __build_feed_key(self, feed: Feed):
-        """
+        """ Buil a key to recognize a feed
         """
         return Helpers.build_id_from_str(str(feed))
     
     def __update_local_feed_header(self, feed: Feed, feed_data):
+        """ Update information about a feed each time we fetch data from it.
+        Only if necessary: If no modification since last time we request data,
+        no update applied.
+        """
         # acquire the lock
         threadLock.acquire()
         database = shelve.open(self.monitored_feeds_data_path)
@@ -380,6 +391,11 @@ class SimpleFeedParser():
     
 # %%
     def __preproccessing(self):
+        """
+        First control every time we launch the framework.
+        Update monitored feed file based on new entry inside the plain text file 
+        editable by the user.
+        """
         #
         def setting_up():
             monitored_feed_reader = mfr.MonitoredFeedReader(self.plain_feeds_data_path)
@@ -390,18 +406,14 @@ class SimpleFeedParser():
             database = shelve.open(self.monitored_feeds_data_path, writeback=True)
             #
             try: 
+                database.clear()
                 for url, lang in zip(moniored_feeds_dataset['feed_link'], moniored_feeds_dataset['language']):
                     a_feed = Feed(url, lang, None)
                     key = self.__build_feed_key(a_feed)
-                    if key in database:
-                        pass
-                        #print("exists")
-                        #a_record = database[key]
-                        #print('\t[etag = {} and last_modified={}]'.format(a_record['etag'], a_record['last_modified']))
-                    else: 
-                        #add to database
-                        database[key] = {'url': url, 'lang': lang,
-                                         'etag': '', 'last_modified': '', 'pub_date': '' }
+                    database[key] = {
+                        'url': url, 'lang': lang, 
+                        'etag': '', 'last_modified': '', 'pub_date': ''
+                    }
             finally:
                 database.close()
         # end of setting_up()
